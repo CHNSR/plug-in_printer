@@ -4,11 +4,18 @@
 // same directory. You can also find a detailed instruction on how to add
 // platforms in the `pubspec.yaml` at
 // https://flutter.dev/to/pubspec-plugin-platforms.
-
-import 'flutter_printer_01_platform_interface.dart';
+import 'src/modules/printer_connection.dart';
+import 'src/modules/printer_graphics.dart';
+import 'src/modules/printer_hardware.dart';
+import 'src/modules/printer_text.dart';
 
 class FlutterPrinter01 {
-  Future<String?> getPlatformVersion() {
-    return FlutterPrinter01Platform.instance.getPlatformVersion();
-  }
+  // สร้าง Instance ให้พร้อมเรียกใช้งานเมื่อ Developer ต้องการ
+  final PrinterConnection connection = PrinterConnection();
+  final PrinterText text = PrinterText();
+  final PrinterHardware hardware = PrinterHardware();
+  final PrinterGraphics graphics = PrinterGraphics();
+  
+  // ป้องกันคลาสถูก instantiate หลายรอบ (ถ้าต้องการ Singleton pattern)
+  // แต่ในที่นี้เราสามารถปล่อยเป็น Instance ปกติได้
 }
