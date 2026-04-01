@@ -23,13 +23,19 @@ class PrinterHardware {
     try {
       // Step 1: Feed กระดาษก่อนตัด
       if (feedLines > 0) {
-        final fed = await FlutterPrinter01Platform.instance
-            .sendRawBytes([27, 100, feedLines]);
+        final fed = await FlutterPrinter01Platform.instance.sendRawBytes([
+          27,
+          100,
+          feedLines,
+        ]);
         if (!fed) return false;
       }
       // Step 2: ส่งคำสั่งตัด
-      return FlutterPrinter01Platform.instance
-          .sendRawBytes([29, 86, mode.byte]);
+      return FlutterPrinter01Platform.instance.sendRawBytes([
+        29,
+        86,
+        mode.byte,
+      ]);
     } catch (e) {
       debugPrint('[PrinterHardware] cutPaper error: $e');
       return false;
@@ -39,7 +45,8 @@ class PrinterHardware {
   /// ดึงสถานะปัจจุบันของเครื่องพิมพ์ (อิงตาม ESC/POS DLE EOT 1)
   /// -1 แปลว่าดึงข้อมูลไม่สำเร็จ
   Future<PrinterStatus> getPrinterStatus() async {
-    final statusByte = await FlutterPrinter01Platform.instance.getPrinterStatus();
+    final statusByte = await FlutterPrinter01Platform.instance
+        .getPrinterStatus();
     return PrinterStatus(statusByte);
   }
 }
@@ -48,6 +55,7 @@ class PrinterHardware {
 enum CutMode {
   /// ตัดกระดาษทั้งหมด (ตัดขาด)
   full(0),
+
   /// ตัดกระดาษบางส่วน (เหลือจุดเชื่อมไว้เล็กน้อย)
   partial(1);
 
@@ -56,18 +64,12 @@ enum CutMode {
 }
 
 /// Enum สำหรับแสดงสถานะของเครื่องพิมพ์ที่เข้าใจง่ายขึ้น
-enum PrinterState {
-  ready,
-  printing,
-  offline,
-  error,
-  unknown,
-}
+enum PrinterState { ready, printing, offline, error, unknown }
 
 /// ข้อมูลสถานะเครื่องพิมพ์ที่แปลงจากการอ่าน Byte (DLE EOT 1)
 class PrinterStatus {
   final int rawByte;
-  
+
   const PrinterStatus(this.rawByte);
 
   bool get isSuccess => rawByte != -1;
@@ -91,7 +93,7 @@ class PrinterStatus {
   PrinterState get state {
     if (!isSuccess) return PrinterState.unknown;
     if (isOffline) return PrinterState.offline;
-    // หมายเหตุ: DLE EOT 1 อาจไม่สามารถบอกได้ชัดเจนว่า "กำลังปริ้นอยู่" (Printing) 
+    // หมายเหตุ: DLE EOT 1 อาจไม่สามารถบอกได้ชัดเจนว่า "กำลังปริ้นอยู่" (Printing)
     // เพราะ Buffer จะทำงานเร็วมาก ปกติถ้าไม่ Offline ถือว่า Ready รับคำสั่งใหม่ได้
     return PrinterState.ready;
   }

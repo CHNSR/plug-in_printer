@@ -85,8 +85,25 @@ class PrinterText {
   /// ESC/POS: ESC { n  →  [27, 123, n]  — 1=เปิด, 0=ปิด
   /// ⚠️ ต้องรีเซ็ตเป็น 0 หลังพิมพ์เสร็จเสมอ หรือสั่ง ESC @ เพื่อ Initialize
   Future<bool> setUpsideDown(bool enabled) {
-    return FlutterPrinter01Platform.instance
-        .sendRawBytes([27, 123, enabled ? 1 : 0]);
+    return FlutterPrinter01Platform.instance.sendRawBytes([
+      27,
+      123,
+      enabled ? 1 : 0,
+    ]);
+  }
+
+  /// เลื่อนกระดาษลงตามจำนวนบรรทัด (Feed Paper)
+  ///
+  /// ใช้ ESC/POS command: ESC d n
+  /// → [27, 100, n]
+  ///
+  /// [lines]: จำนวนบรรทัดที่ต้องการเลื่อน (0–255)
+  /// แนะนำ:
+  /// - 2–3 lines = ปกติ
+  /// - 4–6 lines = กันติดใบมีด
+  Future<bool> feedPaper(int lines) {
+    final n = lines.clamp(0, 255);
+    return FlutterPrinter01Platform.instance.sendRawBytes([27, 100, n]);
   }
 }
 

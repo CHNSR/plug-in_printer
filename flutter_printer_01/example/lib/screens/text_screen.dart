@@ -18,6 +18,7 @@ class TextScreen extends StatefulWidget {
 
 class _TextScreenState extends State<TextScreen> {
   final _textController = TextEditingController(text: 'Hello, POS Printer!');
+  final _feedPaperController = TextEditingController(text: '3');
   bool _isLoading = false;
   String _status = '';
   bool _success = false;
@@ -32,6 +33,7 @@ class _TextScreenState extends State<TextScreen> {
   PrinterAlignment _alignment = PrinterAlignment.left;
   bool _bold = false;
   bool _upsideDown = false;
+  bool _feedPaper = false;
 
   // Computed ESC/POS byte for preview
   int get _sizeBytePreview {
@@ -57,6 +59,7 @@ class _TextScreenState extends State<TextScreen> {
       // 3. Upside-Down
       await widget.plugin.text.setUpsideDown(_upsideDown);
       // 3. Size + Print + Auto Reset
+      await widget.plugin.text.feedPaper(int.parse(_feedPaperController.text));
       bool ok;
       if (_useCustomSize) {
         await widget.plugin.text.setCustomTextSize(
@@ -75,6 +78,7 @@ class _TextScreenState extends State<TextScreen> {
       await widget.plugin.text.setBold(false);
       await widget.plugin.text.setUpsideDown(false);
       await widget.plugin.text.setAlignment(PrinterAlignment.left);
+      await widget.plugin.text.feedPaper(int.parse(_feedPaperController.text));
       setState(() {
         _success = ok;
         _status = ok ? '✅ พิมพ์สำเร็จ' : '❌ พิมพ์ไม่สำเร็จ';
@@ -92,6 +96,7 @@ class _TextScreenState extends State<TextScreen> {
   @override
   void dispose() {
     _textController.dispose();
+    _feedPaperController.dispose();
     super.dispose();
   }
 
@@ -250,7 +255,12 @@ class _TextScreenState extends State<TextScreen> {
                     ),
                   ),
                 ),
-                Divider(height: 1, indent: 16, endIndent: 16, color: cs.outlineVariant),
+                Divider(
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: cs.outlineVariant,
+                ),
                 SwitchListTile.adaptive(
                   value: _upsideDown,
                   onChanged: (v) => setState(() => _upsideDown = v),
@@ -280,6 +290,28 @@ class _TextScreenState extends State<TextScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 20),
+          // ── Feed Paper ─────────────────────────────────────────────
+          const SectionHeader(
+            icon: Icons.format_bold_outlined,
+            label: 'เลื่อนกระดาษ',
+          ),
+          const SizedBox(height: 4),
+          TextField(
+            controller: _feedPaperController,
+            enabled: !_isLoading,
+            maxLines: 1,
+            decoration: InputDecoration(
+              hintText: 'จำนวนบรรทัดที่ต้องการเลื่อน...',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey),
+              ),
+              filled: true,
+              fillColor: cs.surfaceContainerLow,
+            ),
+          ),
+
           const SizedBox(height: 28),
 
           // ── Print Button ─────────────────────────────────────────────
