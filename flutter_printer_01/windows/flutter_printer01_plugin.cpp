@@ -73,17 +73,8 @@ void FlutterPrinter01Plugin::HandleMethodCall(
 
   const std::string &method = method_call.method_name();
 
-  // ---- getPlatformVersion ----
-  if (method == "getPlatformVersion") {
-    std::ostringstream version_stream;
-    version_stream << "Windows ";
-    if (IsWindows10OrGreater()) version_stream << "10+";
-    else if (IsWindows8OrGreater()) version_stream << "8";
-    else if (IsWindows7OrGreater()) version_stream << "7";
-    result->Success(flutter::EncodableValue(version_stream.str()));
-
   // ---- connect ----
-  } else if (method == "connect") {
+  if (method == "connect") {
     const auto *args =
         std::get_if<flutter::EncodableMap>(method_call.arguments());
     if (!args) { result->Success(flutter::EncodableValue(false)); return; }

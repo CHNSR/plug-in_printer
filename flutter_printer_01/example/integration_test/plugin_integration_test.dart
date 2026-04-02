@@ -14,10 +14,8 @@ import 'package:flutter_printer_01/flutter_printer_01.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('getPlatformVersion test', (WidgetTester tester) async {
+  testWidgets('initialization test', (WidgetTester tester) async {
     final FlutterPrinter01 plugin = FlutterPrinter01();
-
-    // The version string depends on the host platform running the test, so
-    // just assert that some non-empty string is returned.
+    expect(plugin, isNotNull);
   });
 }

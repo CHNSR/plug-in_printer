@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_printer_01/flutter_printer_01.dart';
 import 'package:flutter_printer_01/flutter_printer_01_platform_interface.dart';
 import 'package:flutter_printer_01/flutter_printer_01_method_channel.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
@@ -8,7 +7,6 @@ class MockFlutterPrinter01Platform
     with MockPlatformInterfaceMixin
     implements FlutterPrinter01Platform {
   // @override
-  // Future<String?> getPlatformVersion() => Future.value('42');
 
   @override
   Future<bool> connectPrinter(String ip, int port) => Future.value(true);
@@ -46,9 +44,4 @@ void main() {
     expect(initialPlatform, isInstanceOf<MethodChannelFlutterPrinter01>());
   });
 
-  test('getPlatformVersion', () async {
-    FlutterPrinter01 flutterPrinter01Plugin = FlutterPrinter01();
-    MockFlutterPrinter01Platform fakePlatform = MockFlutterPrinter01Platform();
-    FlutterPrinter01Platform.instance = fakePlatform;
-  });
 }

@@ -51,9 +51,6 @@ class FlutterPrinter01Plugin : FlutterPlugin, MethodCallHandler {
 
     override fun onMethodCall(call: MethodCall, result: Result) {
         when (call.method) {
-            "getPlatformVersion" -> {
-                result.success("Android ${android.os.Build.VERSION.RELEASE}")
-            }
             "getUsbDevices" -> {
                 val deviceList = usbManager?.deviceList ?: emptyMap()
                 val devices = ArrayList<Map<String, Any>>()
