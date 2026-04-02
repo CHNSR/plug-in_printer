@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import '../../flutter_printer_01_platform_interface.dart';
 
 class PrinterConnection {
@@ -12,6 +13,20 @@ class PrinterConnection {
 
   Future<bool> getConnectionStatus() {
     return FlutterPrinter01Platform.instance.getConnectionStatus();
+  }
+
+  /// Send raw bytes to the printer
+  /// `data` can be `String` (UTF-8 encoded) or `List<int>`
+  Future<bool> writeData(Object data) {
+    List<int> bytes;
+    if (data is String) {
+      bytes = utf8.encode(data);
+    } else if (data is List<int>) {
+      bytes = data;
+    } else {
+      throw ArgumentError('writeData accepts String or List<int>');
+    }
+    return FlutterPrinter01Platform.instance.sendRawBytes(bytes);
   }
 
   Future<List<Map<String, dynamic>>> getUsbDevices() {
