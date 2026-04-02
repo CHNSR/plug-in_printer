@@ -49,6 +49,20 @@ class PrinterHardware {
         .getPrinterStatus();
     return PrinterStatus(statusByte);
   }
+
+  //Beep notification sound
+  /// ส่งเสียง Beep จากเครื่องพิมพ์
+  ///
+  /// ESC/POS: ESC B n t  →  [27, 66, n, t]
+  ///
+  /// [times]: จำนวนครั้ง (1–9)
+  /// [duration]: ความยาวเสียง (1–9)
+  Future<bool> beep({int times = 3, int duration = 3}) {
+    final n = times.clamp(1, 9);
+    final t = duration.clamp(1, 9);
+
+    return FlutterPrinter01Platform.instance.sendRawBytes([27, 66, n, t]);
+  }
 }
 
 /// โหมดการตัดกระดาษ

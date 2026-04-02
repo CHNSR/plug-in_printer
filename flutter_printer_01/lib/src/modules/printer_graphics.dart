@@ -34,14 +34,14 @@ class PrinterGraphics {
     // [29, 118, 48, 0, xL, xH, yL, yH, ...data]
     // xL+xH*256 = bytesPerRow,  yL+yH*256 = height
     final header = Uint8List(8);
-    header[0] = 29;  // GS
+    header[0] = 29; // GS
     header[1] = 118; // v
-    header[2] = 48;  // 0 (m = 0 → normal density)
-    header[3] = 0;   // reserved
-    header[4] = bytesPerRow & 0xFF;         // xL
-    header[5] = (bytesPerRow >> 8) & 0xFF;  // xH
-    header[6] = h & 0xFF;                   // yL
-    header[7] = (h >> 8) & 0xFF;            // yH
+    header[2] = 48; // 0 (m = 0 → normal density)
+    header[3] = 0; // reserved
+    header[4] = bytesPerRow & 0xFF; // xL
+    header[5] = (bytesPerRow >> 8) & 0xFF; // xH
+    header[6] = h & 0xFF; // yL
+    header[7] = (h >> 8) & 0xFF; // yH
 
     // Build pixel bits
     final pixelData = Uint8List(bytesPerRow * h);
@@ -119,7 +119,10 @@ class PrinterGraphics {
     int threshold = 128,
   }) async {
     try {
-      final pngBytes = await captureFromKey(repaintBoundaryKey, pixelRatio: pixelRatio);
+      final pngBytes = await captureFromKey(
+        repaintBoundaryKey,
+        pixelRatio: pixelRatio,
+      );
       return printImageBytes(pngBytes, threshold: threshold);
     } catch (e) {
       debugPrint('[PrinterGraphics] printFromKey error: $e');
@@ -133,7 +136,8 @@ class PrinterGraphics {
     double pixelRatio = 2.0,
   }) async {
     final context = repaintBoundaryKey.currentContext;
-    if (context == null) throw Exception('GlobalKey has no context — Widget ยังไม่ถูก render');
+    if (context == null)
+      throw Exception('GlobalKey has no context — Widget ยังไม่ถูก render');
 
     final renderObject = context.findRenderObject();
     if (renderObject is! RenderRepaintBoundary) {
@@ -160,7 +164,9 @@ class PrinterGraphics {
       final decoded = img.decodeImage(imageBytes);
       if (decoded == null) throw Exception('ไม่สามารถ decode ภาพได้');
       final escPosBytes = _imageToEscPosRaster(decoded, threshold: threshold);
-      return FlutterPrinter01Platform.instance.sendRawBytes(escPosBytes.toList());
+      return FlutterPrinter01Platform.instance.sendRawBytes(
+        escPosBytes.toList(),
+      );
     } catch (e) {
       debugPrint('[PrinterGraphics] printImageBytes error: $e');
       return false;
@@ -217,16 +223,18 @@ class PrinterGraphics {
     BarcodeHri hri = BarcodeHri.below,
   }) async {
     try {
-      final dataBytes = data.codeUnits;
+      final content = '{B$data';
+      final dataBytes = content.codeUnits;
+
+      final safeWidth = width.clamp(2, 6);
+      final safeHeight = height.clamp(1, 255);
+
       final bytes = <int>[
-        // GS h n — Set barcode height
-        29, 104, height,
-        // GS w n — Set barcode width
-        29, 119, width,
-        // GS H n — HRI position (0=none, 1=above, 2=below, 3=both)
+        29, 104, safeHeight,
+        29, 119, safeWidth,
         29, 72, hri.value,
-        // GS k m d1..dk NUL — Print barcode (73=Code128)
         29, 107, 73, dataBytes.length, ...dataBytes,
+        10, // newline
       ];
 
       return FlutterPrinter01Platform.instance.sendRawBytes(bytes);

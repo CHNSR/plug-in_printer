@@ -6,7 +6,11 @@ import 'shared_widgets.dart';
 class HardwareScreen extends StatefulWidget {
   final FlutterPrinter01 plugin;
   final bool isConnected;
-  const HardwareScreen({super.key, required this.plugin, required this.isConnected});
+  const HardwareScreen({
+    super.key,
+    required this.plugin,
+    required this.isConnected,
+  });
 
   @override
   State<HardwareScreen> createState() => _HardwareScreenState();
@@ -26,12 +30,15 @@ class _HardwareScreenState extends State<HardwareScreen> {
       setState(() {
         _printerStatus = status;
         _success = status.isSuccess;
-        _status = status.isSuccess 
-            ? 'สถานะ: ${status.state.name}\n${status.toString()}' 
+        _status = status.isSuccess
+            ? 'สถานะ: ${status.state.name}\n${status.toString()}'
             : 'ดึงสถานะไม่สำเร็จ';
       });
     } catch (e) {
-      setState(() { _success = false; _status = 'Error: $e'; });
+      setState(() {
+        _success = false;
+        _status = 'Error: $e';
+      });
     } finally {
       setState(() => _isLoading = false);
     }
@@ -43,10 +50,15 @@ class _HardwareScreenState extends State<HardwareScreen> {
       final ok = await widget.plugin.hardware.cutPaper();
       setState(() {
         _success = ok;
-        _status = ok ? '✅ ตัดกระดาษสำเร็จ (ESC/POS [29, 86, 66, 0])' : '❌ ตัดกระดาษล้มเหลว';
+        _status = ok
+            ? '✅ ตัดกระดาษสำเร็จ (ESC/POS [29, 86, 66, 0])'
+            : '❌ ตัดกระดาษล้มเหลว';
       });
     } catch (e) {
-      setState(() { _success = false; _status = 'Error: $e'; });
+      setState(() {
+        _success = false;
+        _status = 'Error: $e';
+      });
     } finally {
       setState(() => _isLoading = false);
     }
@@ -59,7 +71,10 @@ class _HardwareScreenState extends State<HardwareScreen> {
         .whereType<int>()
         .toList();
     if (parts.isEmpty) {
-      setState(() { _success = false; _status = 'กรุณากรอก Bytes ที่ถูกต้อง เช่น 27, 64'; });
+      setState(() {
+        _success = false;
+        _status = 'กรุณากรอก Bytes ที่ถูกต้อง เช่น 27, 64';
+      });
       return;
     }
     setState(() => _isLoading = true);
@@ -67,10 +82,36 @@ class _HardwareScreenState extends State<HardwareScreen> {
       final ok = await widget.plugin.hardware.sendRawBytes(parts);
       setState(() {
         _success = ok;
-        _status = ok ? '✅ Raw Bytes [${parts.join(', ')}] ส่งสำเร็จ' : '❌ ส่งล้มเหลว';
+        _status = ok
+            ? '✅ Raw Bytes [${parts.join(', ')}] ส่งสำเร็จ'
+            : '❌ ส่งล้มเหลว';
       });
     } catch (e) {
-      setState(() { _success = false; _status = 'Error: $e'; });
+      setState(() {
+        _success = false;
+        _status = 'Error: $e';
+      });
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _beep({int times = 2, int duration = 2}) async {
+    setState(() => _isLoading = true);
+    try {
+      final ok = await widget.plugin.hardware.beep(
+        times: times,
+        duration: duration,
+      );
+      setState(() {
+        _success = ok;
+        _status = ok ? '✅ Beep ส่งสำเร็จ' : '❌ ส่งล้มเหลว';
+      });
+    } catch (e) {
+      setState(() {
+        _success = false;
+        _status = 'Error: $e';
+      });
     } finally {
       setState(() => _isLoading = false);
     }
@@ -87,7 +128,10 @@ class _HardwareScreenState extends State<HardwareScreen> {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Hardware Control', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Hardware Control',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: cs.inversePrimary,
         centerTitle: true,
       ),
@@ -97,14 +141,22 @@ class _HardwareScreenState extends State<HardwareScreen> {
           if (!widget.isConnected) const NotConnectedBanner(),
 
           // ── Printer Status ──────────────────────────────────────────────────
-          const SectionHeader(icon: Icons.info_outline, label: 'Printer Status'),
+          const SectionHeader(
+            icon: Icons.info_outline,
+            label: 'Printer Status',
+          ),
           const SizedBox(height: 12),
-          _EscPosRef(bytes: '16, 4, 1', description: 'DLE EOT 1 — Real-time Status'),
+          _EscPosRef(
+            bytes: '16, 4, 1',
+            description: 'DLE EOT 1 — Real-time Status',
+          ),
           const SizedBox(height: 10),
           ActionButton(
             label: 'Check Status',
             icon: Icons.refresh,
-            onTap: (widget.isConnected && !_isLoading) ? _checkPrinterStatus : null,
+            onTap: (widget.isConnected && !_isLoading)
+                ? _checkPrinterStatus
+                : null,
             loading: _isLoading,
             outlined: true,
           ),
@@ -120,22 +172,42 @@ class _HardwareScreenState extends State<HardwareScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('State: ${_printerStatus!.state.name.toUpperCase()}', 
-                      style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary, fontSize: 16)),
+                  Text(
+                    'State: ${_printerStatus!.state.name.toUpperCase()}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: cs.primary,
+                      fontSize: 16,
+                    ),
+                  ),
                   const SizedBox(height: 8),
-                  Text('Online: ${_printerStatus!.isOnline ? "✅" : "❌"} (Raw bit 3)'),
-                  Text('Paper Feed Pushed: ${_printerStatus!.isPaperFeedButtonPressed ? "Yes" : "No"} (Raw bit 6)'),
-                  Text('Drawer Kick-out: ${_printerStatus!.isDrawerKickOutHigh ? "High" : "Low"} (Raw bit 2)'),
+                  Text(
+                    'Online: ${_printerStatus!.isOnline ? "✅" : "❌"} (Raw bit 3)',
+                  ),
+                  Text(
+                    'Paper Feed Pushed: ${_printerStatus!.isPaperFeedButtonPressed ? "Yes" : "No"} (Raw bit 6)',
+                  ),
+                  Text(
+                    'Drawer Kick-out: ${_printerStatus!.isDrawerKickOutHigh ? "High" : "Low"} (Raw bit 2)',
+                  ),
                   const SizedBox(height: 4),
-                  Text('Raw Byte: 0x${_printerStatus!.rawByte.toRadixString(16).padLeft(2, '0')}', 
-                      style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+                  Text(
+                    'Raw Byte: 0x${_printerStatus!.rawByte.toRadixString(16).padLeft(2, '0')}',
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ),
             ),
           ],
           const SizedBox(height: 28),
 
-          const SectionHeader(icon: Icons.content_cut_outlined, label: 'Cut Paper'),
+          const SectionHeader(
+            icon: Icons.content_cut_outlined,
+            label: 'Cut Paper',
+          ),
           const SizedBox(height: 12),
           _EscPosRef(bytes: '29, 86, 66, 0', description: 'GS V B — Full Cut'),
           const SizedBox(height: 10),
@@ -147,7 +219,10 @@ class _HardwareScreenState extends State<HardwareScreen> {
           ),
 
           const SizedBox(height: 28),
-          const SectionHeader(icon: Icons.terminal_outlined, label: 'Custom Raw Bytes'),
+          const SectionHeader(
+            icon: Icons.terminal_outlined,
+            label: 'Custom Raw Bytes',
+          ),
           const SizedBox(height: 12),
           TextField(
             controller: _rawBytesController,
@@ -157,7 +232,9 @@ class _HardwareScreenState extends State<HardwareScreen> {
               labelText: 'ESC/POS Bytes (คั่นด้วย ,)',
               hintText: 'เช่น 27, 64 หรือ 29, 86, 66, 0',
               prefixIcon: const Icon(Icons.data_array_outlined),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               filled: true,
               fillColor: cs.surfaceContainerLow,
             ),
@@ -167,25 +244,57 @@ class _HardwareScreenState extends State<HardwareScreen> {
             label: 'Send Raw Bytes',
             icon: Icons.send_outlined,
             outlined: true,
-            onTap: (widget.isConnected && !_isLoading) ? _sendCustomBytes : null,
+            onTap: (widget.isConnected && !_isLoading)
+                ? _sendCustomBytes
+                : null,
             loading: _isLoading,
           ),
 
           const SizedBox(height: 28),
-          const SectionHeader(icon: Icons.book_outlined, label: 'ESC/POS Reference'),
+          const SectionHeader(
+            icon: Icons.volume_up_outlined,
+            label: 'Beep Sound',
+          ),
           const SizedBox(height: 12),
-          const _EscPosRef(bytes: '27, 64', description: 'ESC @ — Initialize Printer'),
-          const SizedBox(height: 6),
-          const _EscPosRef(bytes: '27, 69, 1', description: 'ESC E 1 — Bold ON'),
-          const SizedBox(height: 6),
-          const _EscPosRef(bytes: '29, 86, 66, 0', description: 'GS V B — Full Cut'),
-          const SizedBox(height: 6),
-          const _EscPosRef(bytes: '29, 86, 66, 1', description: 'GS V B 1 — Partial Cut'),
+          ActionButton(
+            label: 'Beep Sound',
+            icon: Icons.volume_up_outlined,
+            onTap: (widget.isConnected && !_isLoading) ? _beep : null,
+            outlined: true,
+            loading: _isLoading,
+          ),
+          const SizedBox(height: 28),
 
           if (_status.isNotEmpty) ...[
             const SizedBox(height: 20),
             StatusCard(isConnected: _success, status: _status),
           ],
+          const SizedBox(height: 12),
+
+          const SectionHeader(
+            icon: Icons.book_outlined,
+            label: 'ESC/POS Reference',
+          ),
+          const SizedBox(height: 12),
+          const _EscPosRef(
+            bytes: '27, 64',
+            description: 'ESC @ — Initialize Printer',
+          ),
+          const SizedBox(height: 6),
+          const _EscPosRef(
+            bytes: '27, 69, 1',
+            description: 'ESC E 1 — Bold ON',
+          ),
+          const SizedBox(height: 6),
+          const _EscPosRef(
+            bytes: '29, 86, 66, 0',
+            description: 'GS V B — Full Cut',
+          ),
+          const SizedBox(height: 6),
+          const _EscPosRef(
+            bytes: '29, 86, 66, 1',
+            description: 'GS V B 1 — Partial Cut',
+          ),
         ],
       ),
     );
@@ -227,8 +336,10 @@ class _EscPosRef extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(description,
-                style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+            child: Text(
+              description,
+              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+            ),
           ),
         ],
       ),
