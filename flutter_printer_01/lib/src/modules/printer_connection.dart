@@ -37,52 +37,107 @@ class PrinterConnection {
     return FlutterPrinter01Platform.instance.usbConnect(vendorId, productId);
   }
 
-  /// สแกนหาพริ้นเตอร์ที่อยู่ในวง LAN เดียวกันตาม Port ที่ระบุ (ค่าเริ่มต้น 9100)
-  Future<List<String>> scanNetworkPrinters({List<int> ports = const [9100]}) async {
-    final List<String> activePrinters = [];
-    final List<Future<void>> sweepTasks = [];
+  // /// สแกนหาพริ้นเตอร์ที่อยู่ในวง LAN เดียวกันตาม Port ที่ระบุ (ค่าเริ่มต้น 9100)
+  // Future<List<String>> scanNetworkPrinters({List<int> ports = const [9100]}) async {
+  //   final List<String> activePrinters = [];
+  //   final List<Future<void>> sweepTasks = [];
 
-    try {
-      // 1. ดึง IP พื้นฐานของเครื่องตัวเอง (Local Subnet)
-      final interfaces = await NetworkInterface.list(type: InternetAddressType.IPv4);
-      for (var interface in interfaces) {
-        for (var address in interface.addresses) {
-          final ip = address.address;
-          if (ip == '127.0.0.1') continue; // ข้าม Localhost
+  //   try {
+  //     // 1. ดึง IP พื้นฐานของเครื่องตัวเอง (Local Subnet)
+  //     final interfaces = await NetworkInterface.list(type: InternetAddressType.IPv4);
+  //     for (var interface in interfaces) {
+  //       for (var address in interface.addresses) {
+  //         final ip = address.address;
+  //         if (ip == '127.0.0.1') continue; // ข้าม Localhost
 
-          // หา Subnet Prefix เช่น 192.168.1. จาก 192.168.1.50
-          final parts = ip.split('.');
-          if (parts.length != 4) continue;
-          final subnetPrefix = '${parts[0]}.${parts[1]}.${parts[2]}.';
+  //         // หา Subnet Prefix เช่น 192.168.1. จาก 192.168.1.50
+  //         final parts = ip.split('.');
+  //         if (parts.length != 4) continue;
+  //         final subnetPrefix = '${parts[0]}.${parts[1]}.${parts[2]}.';
 
-          // 2. ปูพรมยิง Ping Sweep ควบคู่ไปในทุกๆ IP พร้อมกัน (Asynchronous)
-          for (int i = 1; i <= 254; i++) {
-            final targetIp = '$subnetPrefix$i';
+  //         // 2. ปูพรมยิง Ping Sweep ควบคู่ไปในทุกๆ IP พร้อมกัน (Asynchronous)
+  //         for (int i = 1; i <= 254; i++) {
+  //           final targetIp = '$subnetPrefix$i';
 
-            for (final port in ports) {
-              sweepTasks.add(() async {
-                try {
-                  // ถ้าพอร์ตเปิด เชื่อมต่อได้ใน 300ms ถือว่าเป็นพริ้นเตอร์
-                  final socket = await Socket.connect(targetIp, port, timeout: const Duration(milliseconds: 300));
-                  activePrinters.add(targetIp);
-                  socket.destroy(); // รีบปิดทิ้งทันที เราแค่สุ่มเช็ค
-                } catch (e) {
-                  // เชื่อมต่อไม่ได้ / Time out ข้ามไป
-                }
-              }());
+  //           for (final port in ports) {
+  //             sweepTasks.add(() async {
+  //               try {
+  //                 // ถ้าพอร์ตเปิด เชื่อมต่อได้ใน 300ms ถือว่าเป็นพริ้นเตอร์
+  //                 final socket = await Socket.connect(targetIp, port, timeout: const Duration(milliseconds: 300));
+  //                 activePrinters.add(targetIp);
+  //                 socket.destroy(); // รีบปิดทิ้งทันที เราแค่สุ่มเช็ค
+  //               } catch (e) {
+  //                 // เชื่อมต่อไม่ได้ / Time out ข้ามไป
+  //               }
+  //             }());
+  //           }
+  //         }
+  //       }
+  //     }
+
+  //     // รอให้กองทัพ Task ทั้งหมด (วงละ 254 ตัว) วิ่งทำงานเสร็จพร้อมกัน
+  //     await Future.wait(sweepTasks);
+
+  //   } catch (e) {
+  //     print("Network Sweep Error: $e");
+  //   }
+
+  //   // ตัด IP ซ้ำออก (เผื่อหาเจอจากหลาย Port ติดกัน) แล้วส่งคืนกลับไป
+  //   return activePrinters.toSet().toList();
+  // }
+
+  Future<List<String>> scanNetworkPrinters({
+    List<int> ports = const [9100, 515, 631],
+    int concurrency = 50,
+  }) async {
+    final Set<String> foundIps = {};
+    final List<Future> pool = [];
+
+    final interfaces = await NetworkInterface.list(
+      type: InternetAddressType.IPv4,
+    );
+
+    for (var interface in interfaces) {
+      for (var address in interface.addresses) {
+        final ip = address.address;
+        if (ip == '127.0.0.1') continue;
+
+        final parts = ip.split('.');
+        if (parts.length != 4) continue;
+
+        final subnet = '${parts[0]}.${parts[1]}.${parts[2]}.';
+
+        for (int i = 1; i <= 254; i++) {
+          final targetIp = '$subnet$i';
+
+          for (final port in ports) {
+            pool.add(() async {
+              try {
+                final socket = await Socket.connect(
+                  targetIp,
+                  port,
+                  timeout: const Duration(milliseconds: 200),
+                );
+                foundIps.add(targetIp);
+                socket.destroy();
+              } catch (_) {}
+            }());
+
+            // 🔥 จำกัดจำนวน task พร้อมกัน
+            if (pool.length >= concurrency) {
+              await Future.wait(pool);
+              pool.clear();
             }
           }
         }
       }
-
-      // รอให้กองทัพ Task ทั้งหมด (วงละ 254 ตัว) วิ่งทำงานเสร็จพร้อมกัน
-      await Future.wait(sweepTasks);
-
-    } catch (e) {
-      print("Network Sweep Error: $e");
     }
 
-    // ตัด IP ซ้ำออก (เผื่อหาเจอจากหลาย Port ติดกัน) แล้วส่งคืนกลับไป
-    return activePrinters.toSet().toList();
+    // เคลียร์ที่เหลือ
+    if (pool.isNotEmpty) {
+      await Future.wait(pool);
+    }
+
+    return foundIps.toList();
   }
 }
